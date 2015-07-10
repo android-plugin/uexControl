@@ -1,8 +1,19 @@
 package org.zywx.wbpalmstar.plugin.uexcontrol;
 
+import java.io.IOException;
+
+import org.zywx.wbpalmstar.base.BUtility;
 import org.zywx.wbpalmstar.base.ResoureFinder;
+import org.zywx.wbpalmstar.engine.universalex.EUExBase;
+import org.zywx.wbpalmstar.engine.universalex.EUExUtil;
+
+
 import android.app.Dialog;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Handler;
 import android.os.Message;
 import android.view.Gravity;
@@ -14,6 +25,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 
 public class InputDialog extends Dialog implements
 		android.view.View.OnClickListener {
@@ -29,10 +41,16 @@ public class InputDialog extends Dialog implements
 
 	private Button btnSend;
 	private EditText etInput;
+	
+	private LinearLayout layout;
+	
 	private OnInputFinishCallback callback;
 	private InputMethodManager imm = null;
 	private ResoureFinder finder;
 	private View mainView;
+	
+	public static DialogModel model;
+	
 	private Handler handler = new Handler() {
 		public void handleMessage(Message msg) {
 			if (msg.what == MSG_ACTION_SHOW_SOFTINPUT) {
@@ -60,12 +78,17 @@ public class InputDialog extends Dialog implements
 		mainView = getWindow().getDecorView();
 		btnSend = (Button) findViewById(finder
 				.getId("plugin_control_input_button"));
+		layout=(LinearLayout)findViewById(EUExUtil.getResIdID("layoutId"));
+		if(model!=null){
+			layout.setBackgroundColor(Color.parseColor(model.dialogBg));
+		}
 		btnSend.setOnClickListener(this);
 		etInput = (EditText) findViewById(finder
 				.getId("plugin_control_input_text"));
 		imm = (InputMethodManager) getContext().getSystemService(
 				Context.INPUT_METHOD_SERVICE);
 	}
+
 	// 监听按钮事件
 	@Override
 	public void onClick(View v) {
@@ -91,7 +114,7 @@ public class InputDialog extends Dialog implements
 				imm.hideSoftInputFromWindow(etInput.getWindowToken(), 0);
 				this.cancel();
 				return true;
-			} 
+			}
 		}
 		return super.onTouchEvent(event);
 	}
@@ -145,6 +168,18 @@ public class InputDialog extends Dialog implements
 		etInput.setHint(hint);
 	}
 
+	@SuppressWarnings("deprecation")
+	public void setInputBg(Context mContext) {
+		try {
+			Bitmap bitmap = BitmapFactory.decodeStream(mContext.getAssets().open(
+					model.dialogETBg));
+			etInput.setBackgroundDrawable(new BitmapDrawable(bitmap));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
 	/**
 	 * 设置按钮显示文字
 	 * 
@@ -152,6 +187,18 @@ public class InputDialog extends Dialog implements
 	 */
 	public void setButtonText(String text) {
 		btnSend.setText(text);
+	}
+
+	@SuppressWarnings("deprecation")
+	public void setButtonBg(Context mContext) {
+		try {
+			Bitmap bitmap = BitmapFactory.decodeStream(mContext.getAssets().open(
+					model.dialogButBg));
+			btnSend.setBackgroundDrawable(new BitmapDrawable(bitmap));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	public EditText getEditText() {
@@ -185,12 +232,18 @@ public class InputDialog extends Dialog implements
 	 * @see InputDialog
 	 */
 	public static void show(Context context, int inputType, String inputHint,
-			String btnText, OnInputFinishCallback callback) {
+			String btnText, OnInputFinishCallback callback, DialogModel dialogModel) {
+		model=dialogModel;
 		InputDialog inputDialog = new InputDialog(context);
+		
 		inputDialog.setInputType(inputType);
 		inputDialog.setInputHint(inputHint);
 		inputDialog.setButtonText(btnText);
 		inputDialog.setCallback(callback);
+		if(model!=null){
+			inputDialog.setInputBg(context);
+			inputDialog.setButtonBg(context);
+		}
 		inputDialog.show();
 	}
 

@@ -1,12 +1,17 @@
 package org.zywx.wbpalmstar.plugin.uexcontrol;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
+
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.zywx.wbpalmstar.base.BUtility;
 import org.zywx.wbpalmstar.engine.EBrowserView;
 import org.zywx.wbpalmstar.engine.universalex.EUExBase;
 import org.zywx.wbpalmstar.engine.universalex.EUExCallback;
 import org.zywx.wbpalmstar.plugin.uexcontrol.InputDialog.OnInputFinishCallback;
+
 import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
@@ -24,6 +29,8 @@ public class EUExControl extends EUExBase {
 	public static final String CALLBACK_INPUT_COMPLETED = "uexControl.cbInputCompleted";
 	public static final String CALLBACK_INPUTDIALOG = "uexControl.cbOpenInputDialog";
 	public static final String CALLBACK_EDIT_COMPLETED = "uexControl.cbEditCompleted";
+
+	String parmBg = ""; // 设置背景参数
 
 	public EUExControl(Context context, EBrowserView view) {
 		super(context, view);
@@ -66,9 +73,9 @@ public class EUExControl extends EUExBase {
 							@Override
 							public void onDateSet(DatePicker view, int year,
 									int monthOfYear, int dayOfMonth) {
-								Log.i("date", "year4=" + year + ",monthOfYear4="
-										+ monthOfYear + ",dayOfMonth4="
-										+ dayOfMonth);
+								Log.i("date", "year4=" + year
+										+ ",monthOfYear4=" + monthOfYear
+										+ ",dayOfMonth4=" + dayOfMonth);
 								JSONObject jsonObject = new JSONObject();
 								try {
 									jsonObject
@@ -93,7 +100,7 @@ public class EUExControl extends EUExBase {
 			}
 		});
 	}
-	
+
 	public void openDatePickerWithoutDay(String[] params) {
 		int inYear, inMonth = 0;
 		if (params.length == 2) {
@@ -170,7 +177,7 @@ public class EUExControl extends EUExBase {
 			}
 		});
 	}
-	
+
 	public void openTimePicker(String[] params) {
 		int inHour, inMinute = 0;
 		if (params.length == 2) {
@@ -223,9 +230,9 @@ public class EUExControl extends EUExBase {
 	}
 
 	public void openInputDialog(String[] params) {
-		if (params.length != 3) {
-			return;
-		}
+		// if (params.length != 4) {
+		// return;
+		// }
 		int inputType = InputDialog.INPUT_TYPE_NORMAL;
 		try {
 			inputType = Integer.parseInt(params[0].trim());
@@ -235,10 +242,16 @@ public class EUExControl extends EUExBase {
 		final String inputHint = params[1];
 		final String btnText = params[2];
 		final int finalInputType = inputType;
+		if (params.length == 4) {
+			parmBg = params[3];
+			Log.i("openInputDialog", parmBg);
+		}
+
 		((Activity) mContext).runOnUiThread(new Runnable() {
 
 			@Override
 			public void run() {
+
 				InputDialog.show(mContext, finalInputType, inputHint, btnText,
 						new OnInputFinishCallback() {
 							@Override
@@ -247,13 +260,42 @@ public class EUExControl extends EUExBase {
 										EUExCallback.F_C_TEXT,
 										dialog.getInputText());
 								jsCallback(CALLBACK_INPUTDIALOG, 0,
-                                        EUExCallback.F_C_TEXT,
-                                        dialog.getInputText());
+										EUExCallback.F_C_TEXT,
+										dialog.getInputText());
 							}
-						});
+						}, getParm(parmBg));
 			}
 		});
+	}
 
+	public DialogModel getParm(String parm) {
+		DialogModel model = null;
+		if (!("".equals(parm))) {
+			model = new DialogModel();
+			try {
+				JSONObject jsonObject = new JSONObject(parm);
+				String dialogBg = jsonObject.optString("dialogBg", "");
+				model.dialogBg = dialogBg;
+				String dialogETBg = jsonObject.optString("dialogETBg", "");
+				model.dialogETBg = getUrl(dialogETBg);
+				String dialogButBg = jsonObject.optString("dialogButBg", "");
+				model.dialogButBg = getUrl(dialogButBg);
+				return model;
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return model;
+	}
+
+	public String getUrl(String url) {
+		String imgPath = BUtility.makeRealPath(
+				BUtility.makeUrl(mBrwView.getCurrentUrl(), url),
+				mBrwView.getCurrentWidget().m_widgetPath,
+				mBrwView.getCurrentWidget().m_wgtType);
+		Log.i("openInputDialog", "imgPath==" + imgPath);
+		return imgPath;
 	}
 
 	@Override
